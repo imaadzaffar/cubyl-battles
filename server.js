@@ -8,11 +8,15 @@ app.set('view engine', 'ejs')
 app.use(express.static('public'))
 
 app.get('/', (req, res) => {
+  res.render('home')
+})
+
+app.get('/new', (req, res) => {
   res.redirect(`/${uuidV4()}`)
 })
 
-app.get('/:room', (req, res) => {
-  res.render('room', { roomId: req.params.room })
+app.get('/:roomId', (req, res) => {
+  res.render('room', { roomId: req.params.roomId })
 })
 
 io.on('connection', (socket) => {
