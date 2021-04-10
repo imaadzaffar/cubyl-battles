@@ -18,29 +18,52 @@
         box-sizing: border-box;
       }
 
-      #video-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, 300px);
-        gap: 20px;
-        margin: 20px;
+      .container {
+        display: flex;
+        flex-direction: column;
+      }
+
+      #boxes {
+        display: flex;
+        flex-direction: row;
+      }
+
+      .box {
+        display: flex;
+        flex-direction: column;
       }
 
       video {
-        width: 100%;
+        width: 500px;
         height: 100%;
+        margin: 20px;
         object-fit: cover;
+        border: 2px solid blue;
+      }
+
+      button {
+        width: fit-content;
       }
     </style>
   </head>
   <body>
-    <button><a href="/">home</a></button>
-    <div id="video-grid"></div>
-    <h3 id="username-1"></h3>
-    <h3 id="timer-1">0.00</h3>
-    <h3 id="username-2"></h3>
-    <h3 id="timer-2">0.00</h3>
-    <button onclick="start()">start</button>
-    <button onclick="end()">end</button>
-    <button onclick="ready()">ready</button>
+    <a href="/"><h1>Cubyl Battles</h1></a>
+    <div class="container">
+      <div id="boxes">
+        <div class="box">
+          <video></video>
+          <h3 class="username"></h3>
+          <h3 class="timer"></h3>
+        </div>
+        <div class="box">
+          <video></video>
+          <h3 class="username"></h3>
+          <h3 class="timer"></h3>
+        </div>
+      </div>
+      <button onclick="start()">start</button>
+      <button onclick="end()">end</button>
+      <button onclick="ready()">ready</button>
+    </div>
   </body>
 </html>

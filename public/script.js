@@ -2,13 +2,15 @@ const socket = io('/')
 const peer = new Peer()
 
 let myId
+let users
 const calls = {}
 
-const username = prompt('Enter your username', '')
-document.getElementById('username-1').textContent = username
+const boxes = document.getElementById('boxes').children
 
-const videoGrid = document.getElementById('video-grid')
-const myVideo = document.createElement('video')
+const username = prompt('Enter your username', '')
+updateUsername(username, 0)
+
+const myVideo = boxes[0].getElementsByTagName('video')[0]
 myVideo.muted = true
 
 navigator.mediaDevices
@@ -23,7 +25,7 @@ navigator.mediaDevices
       call.answer(stream)
 
       // get user video stream
-      const video = document.createElement('video')
+      const video = boxes[1].getElementsByTagName('video')[0]
       call.on('stream', (userStream) => {
         addVideoStream(video, userStream)
       })
@@ -35,19 +37,27 @@ navigator.mediaDevices
     })
 
     // get list of users
-    socket.on('get-users', (users) => {
+    socket.on('get-users', (usersList) => {
       console.log('Get current users in this room')
-      console.log(users)
+      console.log(usersList)
+      users = usersList
       let otherUsers = users.filter((user) => user.id !== myId)
       if (otherUsers.length > 0) {
         let otherUser = otherUsers[0]
-        updateInfo(otherUser)
+        updateUsername(otherUser.username, 1)
+        updateTimer('0.00', 0)
+        updateTimer('0.00', 1)
       }
     })
   })
 
 socket.on('user-disconnected', (userId) => {
-  if (calls[userId]) calls[userId].close()
+  if (calls[userId]) {
+    calls[userId].close()
+    updateUsername('', 1)
+    updateTimer('', 0)
+    updateTimer('', 1)
+  }
 })
 
 // on connection to peerserver
@@ -70,16 +80,19 @@ socket.on('user-ready', (userId) => {
 
 function connectToNewUser(user, stream) {
   const call = peer.call(user.id, stream)
-  const video = document.createElement('video')
+  const video = boxes[1].getElementsByTagName('video')[0]
+  video.style.visibility = 'visible'
 
   // get user video stream
   call.on('stream', (userStream) => {
     addVideoStream(video, userStream)
-    updateInfo(user)
+    updateUsername(user.username, 1)
+    updateTimer('0.00', 0)
+    updateTimer('0.00', 1)
   })
   // remove user video stream after disconnection
   call.on('close', () => {
-    video.remove()
+    video.style.visibility = 'hidden'
   })
 
   calls[user.id] = call
@@ -90,11 +103,14 @@ function addVideoStream(video, stream) {
   video.addEventListener('loadedmetadata', () => {
     video.play()
   })
-  videoGrid.append(video)
 }
 
-function updateInfo(user) {
-  document.getElementById('username-2').textContent = user.username
+function updateUsername(username, userNo) {
+  boxes[userNo].getElementsByClassName('username')[0].textContent = username
+}
+
+function updateTimer(time, userNo) {
+  boxes[userNo].getElementsByClassName('timer')[0].textContent = time
 }
 
 function start() {
