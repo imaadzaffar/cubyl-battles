@@ -19,13 +19,38 @@ app.get('/:roomId', (req, res) => {
   res.render('room', { roomId: req.params.roomId })
 })
 
+let users = []
+
 io.on('connection', (socket) => {
-  socket.on('join-room', (roomId, userId) => {
+  socket.on('join', (roomId, userId, username) => {
     socket.join(roomId)
-    socket.broadcast.to(roomId).emit('user-connected', userId)
+
+    const user = { id: userId, username: username, ready: false, timerEnd: false }
+    users.push(user)
+
+    socket.to(roomId).emit('user-connected', user)
+
+    io.in(roomId).emit('get-users', users)
+
+    socket.on('clicked-start', (userId) => {
+      io.in(roomId).emit('timer-start', userId)
+    })
+
+    socket.on('clicked-end', (userId) => {
+      let user = users.find((user) => user.id === userId)
+      user.timerEnd = true
+      io.in(roomId).emit('timer-end', userId)
+    })
+
+    socket.on('clicked-ready', (userId) => {
+      let user = users.find((user) => user.id === userId)
+      user.ready = true
+      io.in(roomId).emit('user-ready', userId)
+    })
 
     socket.on('disconnect', () => {
-      socket.broadcast.to(roomId).emit('user-disconnected', userId)
+      users = users.filter((user) => user.id !== userId)
+      socket.to(roomId).emit('user-disconnected', userId)
     })
   })
 })
