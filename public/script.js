@@ -78,6 +78,11 @@ socket.on('user-ready', (userId) => {
   console.log(`User ready: ${userId}`)
 })
 
+socket.on('new-scramble', (scramble) => {
+  console.log(`New scramble: ${scramble}`)
+  document.getElementById('scramble').textContent = scramble
+})
+
 function connectToNewUser(user, stream) {
   const call = peer.call(user.id, stream)
   const video = boxes[1].getElementsByTagName('video')[0]
@@ -126,4 +131,9 @@ function end() {
 function ready() {
   console.log('button clicked: ready')
   socket.emit('clicked-ready', myId)
+}
+
+function newScramble() {
+  console.log('button clicked: new scramble')
+  socket.emit('clicked-new-scramble', myId)
 }

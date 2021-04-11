@@ -3,6 +3,7 @@ const app = express()
 const server = require('http').Server(app)
 const io = require('socket.io')(server)
 const { v4: uuidV4 } = require('uuid')
+const Scrambo = require('scrambo')
 const PORT = process.env.PORT || 3000
 
 app.set('view engine', 'ejs')
@@ -47,6 +48,13 @@ io.on('connection', (socket) => {
       let user = users.find((user) => user.id === userId)
       user.ready = true
       io.in(roomId).emit('user-ready', userId)
+
+      // TODO: Check if both users are ready => reset timers, new scramble
+    })
+
+    socket.on('clicked-new-scramble', (userId) => {
+      let scrambo = new Scrambo()
+      io.in(roomId).emit('new-scramble', scrambo.get()[0])
     })
 
     socket.on('disconnect', () => {
