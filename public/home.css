@@ -11,10 +11,30 @@ body {
   color: rgb(238, 238, 238);
 }
 
-a,
-a:visited {
+h1 a,
+h1 a:visited {
   color: rgb(238, 238, 238);
   text-decoration: none;
+}
+
+.btn {
+  border: none;
+  outline: none;
+  border-radius: 30px;
+  color: #1e1e1e;
+  padding: 5px 10px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+}
+
+.btn-primary {
+  background-color: #64f596;
+}
+
+.btn-secondary {
+  background-color: #fff38a;
 }
 
 button:hover {

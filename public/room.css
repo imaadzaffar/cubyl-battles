@@ -40,8 +40,25 @@ a {
   text-decoration: none;
 }
 
-button {
+.btn {
   width: fit-content;
+  outline: none;
+  border: none;
+  border-radius: 30px;
+  color: #1e1e1e;
+  padding: 5px 10px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+}
+
+.btn-primary {
+  background-color: #64f596;
+}
+
+.btn-secondary {
+  background-color: #fff38a;
 }
 
 button:hover {
