@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="room.css" />
     <script>
       const ROOM_ID = '<%= roomId %>'
     </script>
@@ -11,40 +12,6 @@
     <script src="/socket.io/socket.io.js" defer></script>
     <script src="script.js" defer></script>
     <title>Cubyl Battles | Battle</title>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      .container {
-        display: flex;
-        flex-direction: column;
-      }
-
-      #boxes {
-        display: flex;
-        flex-direction: row;
-      }
-
-      .box {
-        display: flex;
-        flex-direction: column;
-      }
-
-      video {
-        width: 500px;
-        height: 100%;
-        margin: 20px;
-        object-fit: cover;
-        border: 2px solid blue;
-      }
-
-      button {
-        width: fit-content;
-      }
-    </style>
   </head>
   <body>
     <a href="/"><h1>Cubyl Battles</h1></a>

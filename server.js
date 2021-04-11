@@ -27,25 +27,28 @@ io.on('connection', (socket) => {
   socket.on('join', (roomId, userId, username) => {
     socket.join(roomId)
 
-    const user = { id: userId, username: username, ready: false, timerEnd: false }
+    const user = { userId: userId, roomId: roomId, username: username, ready: false, timerEnd: false }
     users.push(user)
 
     socket.to(roomId).emit('user-connected', user)
 
-    io.in(roomId).emit('get-users', users)
+    io.in(roomId).emit(
+      'get-users',
+      users.filter((user) => user.roomId === roomId),
+    )
 
     socket.on('clicked-start', (userId) => {
       io.in(roomId).emit('timer-start', userId)
     })
 
     socket.on('clicked-end', (userId) => {
-      let user = users.find((user) => user.id === userId)
+      let user = users.find((user) => user.userId === userId)
       user.timerEnd = true
       io.in(roomId).emit('timer-end', userId)
     })
 
     socket.on('clicked-ready', (userId) => {
-      let user = users.find((user) => user.id === userId)
+      let user = users.find((user) => user.userId === userId)
       user.ready = true
       io.in(roomId).emit('user-ready', userId)
 
@@ -58,7 +61,7 @@ io.on('connection', (socket) => {
     })
 
     socket.on('disconnect', () => {
-      users = users.filter((user) => user.id !== userId)
+      users = users.filter((user) => user.userId !== userId)
       socket.to(roomId).emit('user-disconnected', userId)
     })
   })

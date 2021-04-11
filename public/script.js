@@ -7,10 +7,12 @@ const calls = {}
 
 const boxes = document.getElementById('boxes').children
 
-const username = prompt('Enter your username', '')
+let username = prompt('Enter your username', '')
+if (username === null || username === '') username = 'anonymous'
 updateUsername(username, 0)
 
 const myVideo = boxes[0].getElementsByTagName('video')[0]
+boxes[1].getElementsByTagName('video')[0].style.visibility = 'hidden'
 myVideo.muted = true
 
 navigator.mediaDevices
@@ -19,7 +21,7 @@ navigator.mediaDevices
     audio: true,
   })
   .then((stream) => {
-    addVideoStream(myVideo, stream)
+    connectVideoStream(myVideo, stream)
 
     peer.on('call', (call) => {
       call.answer(stream)
@@ -27,7 +29,7 @@ navigator.mediaDevices
       // get user video stream
       const video = boxes[1].getElementsByTagName('video')[0]
       call.on('stream', (userStream) => {
-        addVideoStream(video, userStream)
+        connectVideoStream(video, userStream)
       })
     })
 
@@ -41,7 +43,7 @@ navigator.mediaDevices
       console.log('Get current users in this room')
       console.log(usersList)
       users = usersList
-      let otherUsers = users.filter((user) => user.id !== myId)
+      let otherUsers = users.filter((user) => user.userId !== myId)
       if (otherUsers.length > 0) {
         let otherUser = otherUsers[0]
         updateUsername(otherUser.username, 1)
@@ -84,13 +86,12 @@ socket.on('new-scramble', (scramble) => {
 })
 
 function connectToNewUser(user, stream) {
-  const call = peer.call(user.id, stream)
+  const call = peer.call(user.userId, stream)
   const video = boxes[1].getElementsByTagName('video')[0]
-  video.style.visibility = 'visible'
 
   // get user video stream
   call.on('stream', (userStream) => {
-    addVideoStream(video, userStream)
+    connectVideoStream(video, userStream)
     updateUsername(user.username, 1)
     updateTimer('0.00', 0)
     updateTimer('0.00', 1)
@@ -100,10 +101,11 @@ function connectToNewUser(user, stream) {
     video.style.visibility = 'hidden'
   })
 
-  calls[user.id] = call
+  calls[user.userId] = call
 }
 
-function addVideoStream(video, stream) {
+function connectVideoStream(video, stream) {
+  video.style.visibility = 'visible'
   video.srcObject = stream
   video.addEventListener('loadedmetadata', () => {
     video.play()
