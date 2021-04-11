@@ -3,13 +3,14 @@ const peer = new Peer()
 
 let myId
 let users
+let battleState = 0
 const calls = {}
 
 const boxes = document.getElementById('boxes').children
 
 let username = prompt('Enter your username', '')
 if (username === null || username === '') username = 'anonymous'
-updateUsername(username, 0)
+setUsernameText(username, 0)
 
 const myVideo = boxes[0].getElementsByTagName('video')[0]
 boxes[1].getElementsByTagName('video')[0].style.visibility = 'hidden'
@@ -46,9 +47,11 @@ navigator.mediaDevices
       let otherUsers = users.filter((user) => user.userId !== myId)
       if (otherUsers.length > 0) {
         let otherUser = otherUsers[0]
-        updateUsername(otherUser.username, 1)
-        updateTimer('0.00', 0)
-        updateTimer('0.00', 1)
+
+        battleState = 1
+        setUsernameText(otherUser.username, 1)
+        setTimerText('00.00', 0)
+        setTimerText('00.00', 1)
       }
     })
   })
@@ -56,9 +59,11 @@ navigator.mediaDevices
 socket.on('user-disconnected', (userId) => {
   if (calls[userId]) {
     calls[userId].close()
-    updateUsername('', 1)
-    updateTimer('', 0)
-    updateTimer('', 1)
+
+    battleState = 0
+    setUsernameText('', 1)
+    setTimerText('', 0)
+    setTimerText('', 1)
   }
 })
 
@@ -68,21 +73,18 @@ peer.on('open', (id) => {
   socket.emit('join', ROOM_ID, myId, username)
 })
 
-socket.on('timer-start', (userId) => {
-  console.log(`Timer started: ${userId}`)
+socket.on('update-scramble', (scramble) => {
+  console.log(`Update scramble: ${scramble}`)
+  document.getElementById('scramble').textContent = scramble
 })
 
-socket.on('timer-end', (userId) => {
-  console.log(`Timer ended: ${userId}`)
+socket.on('update-timer', (timerText) => {
+  console.log(timerText)
+  boxes[1].getElementsByClassName('timer')[0].textContent = timerText
 })
 
 socket.on('user-ready', (userId) => {
   console.log(`User ready: ${userId}`)
-})
-
-socket.on('new-scramble', (scramble) => {
-  console.log(`New scramble: ${scramble}`)
-  document.getElementById('scramble').textContent = scramble
 })
 
 function connectToNewUser(user, stream) {
@@ -92,9 +94,12 @@ function connectToNewUser(user, stream) {
   // get user video stream
   call.on('stream', (userStream) => {
     connectVideoStream(video, userStream)
-    updateUsername(user.username, 1)
-    updateTimer('0.00', 0)
-    updateTimer('0.00', 1)
+
+    battleState = 1
+    newScramble()
+    setUsernameText(user.username, 1)
+    setTimerText('00.00', 0)
+    setTimerText('00.00', 1)
   })
   // remove user video stream after disconnection
   call.on('close', () => {
@@ -112,30 +117,145 @@ function connectVideoStream(video, stream) {
   })
 }
 
-function updateUsername(username, userNo) {
+function setUsernameText(username, userNo) {
   boxes[userNo].getElementsByClassName('username')[0].textContent = username
 }
 
-function updateTimer(time, userNo) {
+function setTimerText(time, userNo) {
   boxes[userNo].getElementsByClassName('timer')[0].textContent = time
 }
 
-function start() {
-  console.log('button clicked: start')
-  socket.emit('clicked-start', myId)
+function solveStarted() {
+  socket.emit('solve-started')
 }
 
-function end() {
-  console.log('button clicked: end')
-  socket.emit('clicked-end', myId)
+function solveFinished() {
+  const solveTime = timerText.textContent
+  socket.emit('solve-finished', solveTime)
 }
 
 function ready() {
-  console.log('button clicked: ready')
-  socket.emit('clicked-ready', myId)
+  socket.emit('user-ready')
 }
 
 function newScramble() {
-  console.log('button clicked: new scramble')
-  socket.emit('clicked-new-scramble', myId)
+  socket.emit('new-scramble')
+}
+
+// ---------
+// Timer
+// ---------
+
+const timerText = boxes[0].getElementsByClassName('timer')[0]
+const timerButton = document.getElementById('timerButton')
+
+let timerInterval = null
+let timerState = 0
+
+let spaceDownTime = 0
+let spaceUpTime = 0
+let keyUpCount = 0
+
+let minutes = 0
+let seconds = 0
+let centiseconds = 0
+
+timerButton.addEventListener('click', (event) => {
+  if (battleState === 1) {
+    timer()
+  }
+})
+
+document.addEventListener('keydown', (event) => {
+  if (battleState === 1) {
+    if (event.code === 'Space') {
+      if (spaceDownTime === 0) {
+        if (timerState == 0) {
+          spaceDownTime = Date.now()
+          spaceUpTime = 0
+        } else if (timerState == 1) {
+          timer()
+        }
+      }
+    }
+  }
+})
+
+document.addEventListener('keyup', (event) => {
+  if (battleState === 1) {
+    if (event.code === 'Space') {
+      if (timerState === 0) {
+        spaceUpTime = Date.now()
+        let spaceTimePressed = spaceUpTime - spaceDownTime
+        spaceDownTime = 0
+
+        if (spaceTimePressed > 300) {
+          timer()
+        }
+      } else if (timerState === 2) {
+        if (keyUpCount === 0) {
+          keyUpCount++
+        } else {
+          keyUpCount = 0
+          timer()
+        }
+      }
+    }
+  }
+})
+
+function timer() {
+  // Remove focus from all buttons
+  document.querySelectorAll('button').forEach(function (button) {
+    button.blur()
+  })
+
+  switch (timerState) {
+    case 0:
+      timerState = 1
+      timerText.classList.add('active')
+      timerButton.textContent = 'stop'
+
+      solveStarted()
+
+      timerInterval = window.setInterval(updateTimer, 10)
+      break
+    case 1:
+      timerState = 2
+      timerButton.textContent = 'reset'
+
+      solveFinished()
+
+      minutes = 0
+      seconds = 0
+      centiseconds = 0
+
+      window.clearInterval(timerInterval)
+      break
+    case 2:
+      timerState = 0
+      timerText.classList.remove('active')
+      timerText.textContent = '00.00'
+      timerButton.textContent = 'start'
+
+      newScramble()
+      break
+  }
+}
+
+function updateTimer() {
+  centiseconds++
+  if (centiseconds > 100) {
+    centiseconds = 0
+    seconds++
+  }
+  if (seconds > 60) {
+    seconds = 0
+    minutes++
+
+    timerText.textContent =
+      ('00' + minutes).substr(-2, 2) + '.' + ('00' + seconds).substr(-2, 2) + '.' + ('00' + centiseconds).substr(-2, 2)
+  } else {
+    timerText.textContent = ('00' + seconds).substr(-2, 2) + '.' + ('00' + centiseconds).substr(-2, 2)
+  }
 }

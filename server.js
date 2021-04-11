@@ -27,7 +27,7 @@ io.on('connection', (socket) => {
   socket.on('join', (roomId, userId, username) => {
     socket.join(roomId)
 
-    const user = { userId: userId, roomId: roomId, username: username, ready: false, timerEnd: false }
+    const user = { userId: userId, roomId: roomId, username: username, ready: false, timerEnd: false, solveTime: '' }
     users.push(user)
 
     socket.to(roomId).emit('user-connected', user)
@@ -37,17 +37,18 @@ io.on('connection', (socket) => {
       users.filter((user) => user.roomId === roomId),
     )
 
-    socket.on('clicked-start', (userId) => {
-      io.in(roomId).emit('timer-start', userId)
+    socket.on('solve-started', () => {
+      socket.to(roomId).emit('update-timer', 'solving...')
     })
 
-    socket.on('clicked-end', (userId) => {
+    socket.on('solve-finished', (solveTime) => {
       let user = users.find((user) => user.userId === userId)
       user.timerEnd = true
-      io.in(roomId).emit('timer-end', userId)
+      user.solveTime = solveTime
+      socket.to(roomId).emit('update-timer', solveTime)
     })
 
-    socket.on('clicked-ready', (userId) => {
+    socket.on('user-ready', () => {
       let user = users.find((user) => user.userId === userId)
       user.ready = true
       io.in(roomId).emit('user-ready', userId)
@@ -55,9 +56,9 @@ io.on('connection', (socket) => {
       // TODO: Check if both users are ready => reset timers, new scramble
     })
 
-    socket.on('clicked-new-scramble', (userId) => {
+    socket.on('new-scramble', () => {
       let scrambo = new Scrambo()
-      io.in(roomId).emit('new-scramble', scrambo.get()[0])
+      io.in(roomId).emit('update-scramble', scrambo.get()[0])
     })
 
     socket.on('disconnect', () => {
