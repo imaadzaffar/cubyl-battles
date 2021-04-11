@@ -83,8 +83,12 @@ socket.on('update-timer', (timerText) => {
   boxes[1].getElementsByClassName('timer')[0].textContent = timerText
 })
 
-socket.on('user-ready', (userId) => {
-  console.log(`User ready: ${userId}`)
+socket.on('new-round', () => {
+  battleState = 1
+
+  timerButton.textContent = 'start'
+  setTimerText('00.00', 0)
+  setTimerText('00.00', 1)
 })
 
 function connectToNewUser(user, stream) {
@@ -134,7 +138,7 @@ function solveFinished() {
   socket.emit('solve-finished', solveTime)
 }
 
-function ready() {
+function userReady() {
   socket.emit('user-ready')
 }
 
@@ -222,7 +226,7 @@ function timer() {
       break
     case 1:
       timerState = 2
-      timerButton.textContent = 'reset'
+      timerButton.textContent = 'ready'
 
       solveFinished()
 
@@ -233,12 +237,12 @@ function timer() {
       window.clearInterval(timerInterval)
       break
     case 2:
-      timerState = 0
       timerText.classList.remove('active')
-      timerText.textContent = '00.00'
-      timerButton.textContent = 'start'
 
-      newScramble()
+      timerState = 0
+      battleState = 0
+      userReady()
+
       break
   }
 }
