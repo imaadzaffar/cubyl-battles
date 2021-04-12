@@ -6,15 +6,18 @@ let users
 let battleState = 0
 const calls = {}
 
-const boxes = document.getElementById('boxes').children
-
 let username = prompt('Enter your username', '')
 if (username === null || username === '') username = 'anonymous'
 setUsernameText(username, 0)
 
-const myVideo = boxes[0].getElementsByTagName('video')[0]
-boxes[1].getElementsByTagName('video')[0].style.visibility = 'hidden'
+const [myTimer, otherTimer] = document.getElementsByClassName('timer')
+const timerButton = document.getElementById('timerButton')
+myTimer.style.display = 'none'
+timerButton.style.display = 'none'
+
+const [myVideo, otherVideo] = document.getElementsByTagName('video')
 myVideo.muted = true
+otherVideo.style.visibility = 'hidden'
 
 navigator.mediaDevices
   .getUserMedia({
@@ -28,9 +31,8 @@ navigator.mediaDevices
       call.answer(stream)
 
       // get user video stream
-      const video = boxes[1].getElementsByTagName('video')[0]
       call.on('stream', (userStream) => {
-        connectVideoStream(video, userStream)
+        connectVideoStream(otherVideo, userStream)
       })
     })
 
@@ -38,32 +40,36 @@ navigator.mediaDevices
     socket.on('user-connected', (user) => {
       connectToNewUser(user, stream)
     })
-
-    // get list of users
-    socket.on('get-users', (usersList) => {
-      console.log('Get current users in this room')
-      console.log(usersList)
-      users = usersList
-      let otherUsers = users.filter((user) => user.userId !== myId)
-      if (otherUsers.length > 0) {
-        let otherUser = otherUsers[0]
-
-        battleState = 1
-        setUsernameText(otherUser.username, 1)
-        setTimerText('00.00', 0)
-        setTimerText('00.00', 1)
-      }
-    })
   })
+
+// get list of users
+socket.on('get-users', (usersList) => {
+  console.log('Get current users in this room')
+  console.log(usersList)
+  users = usersList
+  let otherUsers = users.filter((user) => user.userId !== myId)
+  if (otherUsers.length > 0) {
+    let otherUser = otherUsers[0]
+
+    battleState = 1
+    setUsernameText(otherUser.username, 1)
+    myTimer.style.display = 'block'
+    timerButton.style.display = 'block'
+    setTimerText('00.00', 0)
+    setTimerText('00.00', 1)
+  }
+})
 
 socket.on('user-disconnected', (userId) => {
   if (calls[userId]) {
     calls[userId].close()
 
     battleState = 0
+    myTimer.style.display = 'none'
+    timerButton.style.display = 'none'
     setUsernameText('', 1)
-    setTimerText('', 0)
-    setTimerText('', 1)
+    setTimerText('00.00', 0)
+    setTimerText('00.00', 1)
   }
 })
 
@@ -79,38 +85,40 @@ socket.on('update-scramble', (scramble) => {
 })
 
 socket.on('update-timer', (timerText) => {
-  console.log(timerText)
-  boxes[1].getElementsByClassName('timer')[0].textContent = timerText
+  console.log(`Update timer text: ${timerText}`)
+  document.getElementsByClassName('timer')[1].textContent = timerText
 })
 
 socket.on('new-round', () => {
   battleState = 1
 
   timerButton.textContent = 'start'
+  myTimer.classList.remove('finished')
   setTimerText('00.00', 0)
   setTimerText('00.00', 1)
 })
 
-function connectToNewUser(user, stream) {
-  const call = peer.call(user.userId, stream)
-  const video = boxes[1].getElementsByTagName('video')[0]
+function connectToNewUser(newUser, stream) {
+  const call = peer.call(newUser.userId, stream)
 
   // get user video stream
   call.on('stream', (userStream) => {
-    connectVideoStream(video, userStream)
+    connectVideoStream(otherVideo, userStream)
 
     battleState = 1
     newScramble()
-    setUsernameText(user.username, 1)
+    myTimer.style.display = 'block'
+    timerButton.style.display = 'block'
+    setUsernameText(newUser.username, 1)
     setTimerText('00.00', 0)
     setTimerText('00.00', 1)
   })
   // remove user video stream after disconnection
   call.on('close', () => {
-    video.style.visibility = 'hidden'
+    otherVideo.style.visibility = 'hidden'
   })
 
-  calls[user.userId] = call
+  calls[newUser.userId] = call
 }
 
 function connectVideoStream(video, stream) {
@@ -122,11 +130,11 @@ function connectVideoStream(video, stream) {
 }
 
 function setUsernameText(username, userNo) {
-  boxes[userNo].getElementsByClassName('username')[0].textContent = username
+  document.getElementsByClassName('username')[userNo].textContent = username
 }
 
 function setTimerText(time, userNo) {
-  boxes[userNo].getElementsByClassName('timer')[0].textContent = time
+  document.getElementsByClassName('timer')[userNo].textContent = time
 }
 
 function solveStarted() {
@@ -134,7 +142,7 @@ function solveStarted() {
 }
 
 function solveFinished() {
-  const solveTime = timerText.textContent
+  const solveTime = myTimer.textContent
   socket.emit('solve-finished', solveTime)
 }
 
@@ -149,9 +157,6 @@ function newScramble() {
 // ---------
 // Timer
 // ---------
-
-const timerText = boxes[0].getElementsByClassName('timer')[0]
-const timerButton = document.getElementById('timerButton')
 
 let timerInterval = null
 let timerState = 0
@@ -217,7 +222,7 @@ function timer() {
   switch (timerState) {
     case 0:
       timerState = 1
-      timerText.classList.add('active')
+      myTimer.classList.add('active')
       timerButton.textContent = 'stop'
 
       solveStarted()
@@ -226,6 +231,8 @@ function timer() {
       break
     case 1:
       timerState = 2
+      myTimer.classList.remove('active')
+      myTimer.classList.add('finished')
       timerButton.textContent = 'ready'
 
       solveFinished()
@@ -237,8 +244,6 @@ function timer() {
       window.clearInterval(timerInterval)
       break
     case 2:
-      timerText.classList.remove('active')
-
       timerState = 0
       battleState = 0
       userReady()
@@ -257,9 +262,9 @@ function updateTimer() {
     seconds = 0
     minutes++
 
-    timerText.textContent =
+    myTimer.textContent =
       ('00' + minutes).substr(-2, 2) + '.' + ('00' + seconds).substr(-2, 2) + '.' + ('00' + centiseconds).substr(-2, 2)
   } else {
-    timerText.textContent = ('00' + seconds).substr(-2, 2) + '.' + ('00' + centiseconds).substr(-2, 2)
+    myTimer.textContent = ('00' + seconds).substr(-2, 2) + '.' + ('00' + centiseconds).substr(-2, 2)
   }
 }
