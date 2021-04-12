@@ -7,7 +7,8 @@ const Scrambo = require('scrambo')
 const PORT = process.env.PORT || 3000
 
 app.set('view engine', 'ejs')
-app.use(express.static('public'))
+app.use('/static', express.static('./public'))
+app.use('/fonts', express.static('./public/fonts'))
 
 app.get('/', (req, res) => {
   res.render('home')

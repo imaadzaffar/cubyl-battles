@@ -1,19 +1,60 @@
+@font-face {
+  font-family: 'DK-Sensory-Overload';
+  src: url('DK-Sensory-Overload.ttf.woff') format('woff'),
+    url('DK-Sensory-Overload.ttf.svg#DK-Sensory-Overload') format('svg'), url('DK-Sensory-Overload.ttf.eot'),
+    url('DK-Sensory-Overload.ttf.eot?#iefix') format('embedded-opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/webfonts/JetBrainsMono-Regular.eot')
+      format('embedded-opentype'),
+    url('https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/webfonts/JetBrainsMono-Regular.woff2')
+      format('woff2'),
+    url('https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/webfonts/JetBrainsMono-Regular.woff')
+      format('woff'),
+    url('https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/ttf/JetBrainsMono-Regular.ttf')
+      format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/webfonts/JetBrainsMono-Bold.eot')
+      format('embedded-opentype'),
+    url('https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/webfonts/JetBrainsMono-Bold.woff2')
+      format('woff2'),
+    url('https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/webfonts/JetBrainsMono-Bold.woff')
+      format('woff'),
+    url('https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/ttf/JetBrainsMono-Bold.ttf')
+      format('truetype');
+  font-weight: bold;
+  font-style: normal;
+}
+
 * {
-  margin: 0;
-  padding: 0;
+  /* margin: 0;
+  padding: 0; */
   box-sizing: border-box;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans',
-    'Helvetica Neue', sans-serif;
+  font-family: 'JetBrains Mono', monospace;
   background-color: #1e1e1e;
   color: rgb(238, 238, 238);
 }
 
-.container {
+.container-wrapper {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.container {
+  max-width: 80%;
 }
 
 #boxes {
@@ -35,12 +76,19 @@ video {
   border: 2px solid orange;
 }
 
+h1 {
+  text-align: center;
+  font-size: 40px;
+  font-family: 'DK Sensory Overload';
+}
+
 a {
-  color: rgb(238, 238, 238);
+  color: #f1f1f1;
   text-decoration: none;
 }
 
 .btn {
+  background-color: #64f596;
   width: fit-content;
   outline: none;
   border: none;
@@ -50,19 +98,38 @@ a {
   text-align: center;
   text-decoration: none;
   display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
   font-size: 16px;
   transition: all 300ms ease;
 }
 
-.btn-primary {
-  background-color: #64f596;
-}
-
-.btn-secondary {
-  background-color: #fff38a;
-}
-
-button:hover {
+.btn:hover {
   cursor: pointer;
-  background-color: #f2ab3f;
+  background-color: #32b660;
+}
+
+#scramble {
+  text-align: center;
+  font-size: 36px;
+  font-weight: 700;
+  word-spacing: 5px;
+  color: #e3cb46;
+}
+
+.username {
+  font-size: 20px;
+}
+
+.timer {
+  font-size: 40px;
+  font-weight: 700;
+  transition: all 300ms ease;
+}
+
+.timer.active {
+  color: #64f596;
+}
+
+.timer.finished {
+  color: #e3cb46;
 }
