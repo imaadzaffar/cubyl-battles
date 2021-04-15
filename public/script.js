@@ -254,17 +254,19 @@ function timer() {
 
 function updateTimer() {
   centiseconds++
-  if (centiseconds > 100) {
+
+  if (centiseconds >= 100) {
     centiseconds = 0
     seconds++
   }
-  if (seconds > 60) {
+
+  if (seconds >= 60) {
     seconds = 0
     minutes++
+  }
 
-    myTimer.textContent =
-      ('00' + minutes).substr(-2, 2) + '.' + ('00' + seconds).substr(-2, 2) + '.' + ('00' + centiseconds).substr(-2, 2)
-  } else {
-    myTimer.textContent = ('00' + seconds).substr(-2, 2) + '.' + ('00' + centiseconds).substr(-2, 2)
+  myTimer.textContent = ('00' + seconds).substr(-2, 2) + '.' + ('00' + centiseconds).substr(-2, 2)
+  if (minutes >= 1) {
+    myTimer.textContent = ('00' + minutes).substr(-2, 2) + '.' + myTimer.textContent
   }
 }
