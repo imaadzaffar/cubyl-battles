@@ -1,8 +1,8 @@
 @font-face {
-  font-family: 'DK-Sensory-Overload';
-  src: url('DK-Sensory-Overload.ttf.woff') format('woff'),
-    url('DK-Sensory-Overload.ttf.svg#DK-Sensory-Overload') format('svg'), url('DK-Sensory-Overload.ttf.eot'),
-    url('DK-Sensory-Overload.ttf.eot?#iefix') format('embedded-opentype');
+  font-family: 'DK Sensory Overload';
+  src: url('fonts/DK-Sensory-Overload.ttf.woff') format('woff'),
+    url('fonts/DK-Sensory-Overload.ttf.svg#DK-Sensory-Overload') format('svg'), url('fonts/DK-Sensory-Overload.ttf.eot'),
+    url('fonts/DK-Sensory-Overload.ttf.eot?#iefix') format('embedded-opentype');
   font-weight: normal;
   font-style: normal;
 }
