@@ -10,7 +10,7 @@ let battleState = 0
 let calls = {}
 
 let username = prompt('Enter your username', '')
-if (username === null || username === '') username = 'anonymous'
+if (username === null || username === '') username = 'cuber'
 setUsernameText(username, 0)
 let otherUsername = ''
 
