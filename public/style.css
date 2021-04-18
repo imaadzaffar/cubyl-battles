@@ -83,7 +83,15 @@ body {
 }
 
 video {
-  visibility: hidden;
+  display: none;
+  width: 400px;
+  height: 300px;
+  object-fit: cover;
+  border: 5px solid #e39746;
+}
+
+img {
+  display: none;
   width: 400px;
   height: 300px;
   object-fit: cover;
@@ -106,8 +114,8 @@ p {
   max-width: 60%;
 }
 
-#linkTimer,
-#linkTimer:visited {
+#timerLink,
+#timerLink:visited {
   color: #46b9e3;
   text-decoration: none;
 }

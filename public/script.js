@@ -23,14 +23,15 @@ let heading = document.getElementById('heading')
 const [myTimer, otherTimer] = document.getElementsByClassName('timer')
 const timerButton = document.getElementById('timerButton')
 myTimer.style.display = 'none'
+otherTimer.style.display = 'none'
 timerButton.style.display = 'none'
 
 let videoAllowed = false
 let myStream
 
 const [myVideo, otherVideo] = document.getElementsByTagName('video')
+const [myPlaceholder, otherPlaceholder] = document.getElementsByClassName('placeholder')
 myVideo.muted = true
-otherVideo.style.visibility = 'hidden'
 
 // ----
 // Video stream
@@ -48,6 +49,7 @@ navigator.mediaDevices
   })
   .catch((error) => {
     videoAllowed = false
+    showPlaceholder(!videoAllowed, 0)
     console.log(error)
   })
 
@@ -65,6 +67,7 @@ peer.on('call', (call) => {
     call.answer(myStream)
   } else {
     call.answer()
+    showPlaceholder(true, 0)
   }
 
   // get user video stream
@@ -97,16 +100,16 @@ socket.on('get-users', (usersList) => {
 
     otherUsername = otherUser.username
     startInfo()
+
+    showPlaceholder(!videoAllowed, 1)
   }
 })
 
 socket.on('user-disconnected', (userId) => {
-  if (calls[userId]) {
-    calls[userId].close()
+  if (calls[userId]) calls[userId].close()
 
-    battleState = 0
-    resetInfo()
-  }
+  battleState = 0
+  resetInfo()
 })
 
 socket.on('update-scramble', (scrambleText) => {
@@ -138,27 +141,34 @@ function connectToNewUser(newUser) {
   let call
   if (videoAllowed) {
     call = peer.call(newUser.userId, myStream)
+    // get user video stream
+    call.on('stream', (otherStream) => {
+      connectVideoStream(otherVideo, otherStream)
+    })
+
+    // remove user video stream after disconnection
+    call.on('close', () => {
+      otherVideo.style.display = 'none'
+    })
+
+    calls[newUser.userId] = call
   }
 
-  // get user video stream
-  call.on('stream', (otherStream) => {
-    connectVideoStream(otherVideo, otherStream)
-  })
-
-  // remove user video stream after disconnection
-  call.on('close', () => {
-    otherVideo.style.visibility = 'hidden'
-  })
-
-  calls[newUser.userId] = call
+  showPlaceholder(!videoAllowed, 0)
+  showPlaceholder(!videoAllowed, 1)
 }
 
 function connectVideoStream(video, stream) {
-  video.style.visibility = 'visible'
+  video.style.display = 'block'
   video.srcObject = stream
   video.addEventListener('loadedmetadata', () => {
     video.play()
   })
+}
+
+function showPlaceholder(show, userNo) {
+  document.getElementsByClassName('placeholder')[userNo].style.display = show ? 'block' : 'none'
+  document.getElementsByTagName('video')[userNo].style.display = show ? 'none' : 'block'
 }
 
 // ----
@@ -168,6 +178,7 @@ function connectVideoStream(video, stream) {
 function startInfo() {
   battleState = 1
   myTimer.style.display = 'block'
+  otherTimer.style.display = 'block'
   timerButton.style.display = 'block'
   setUsernameText(otherUsername, 1)
   setTimerText('00.00', 0)
@@ -184,13 +195,13 @@ function roundInfo() {
 }
 
 function resetInfo() {
-  otherVideo.style.visibility = 'hidden'
+  otherVideo.style.display = 'none'
+  otherPlaceholder.style.display = 'none'
   heading.textContent = 'Waiting for opponent to join...'
   myTimer.style.display = 'none'
+  otherTimer.style.display = 'none'
   timerButton.style.display = 'none'
   setUsernameText('', 1)
-  setTimerText('', 0)
-  setTimerText('', 1)
 }
 
 function setUsernameText(username, userNo) {
