@@ -1,23 +1,40 @@
 const socket = io('/')
 const peer = new Peer()
 
+// ----
+// Variables
+// ----
+
 let myId
-let users
 let battleState = 0
-const calls = {}
+let calls = {}
 
 let username = prompt('Enter your username', '')
 if (username === null || username === '') username = 'anonymous'
 setUsernameText(username, 0)
+let otherUsername = ''
+
+// ----
+// HTML elements
+// ----
+
+let heading = document.getElementById('heading')
 
 const [myTimer, otherTimer] = document.getElementsByClassName('timer')
 const timerButton = document.getElementById('timerButton')
 myTimer.style.display = 'none'
 timerButton.style.display = 'none'
 
+let videoAllowed = false
+let myStream
+
 const [myVideo, otherVideo] = document.getElementsByTagName('video')
 myVideo.muted = true
 otherVideo.style.visibility = 'hidden'
+
+// ----
+// Video stream
+// ----
 
 navigator.mediaDevices
   .getUserMedia({
@@ -25,38 +42,61 @@ navigator.mediaDevices
     audio: true,
   })
   .then((stream) => {
-    connectVideoStream(myVideo, stream)
-
-    peer.on('call', (call) => {
-      call.answer(stream)
-
-      // get user video stream
-      call.on('stream', (userStream) => {
-        connectVideoStream(otherVideo, userStream)
-      })
-    })
-
-    // on another user connection to room
-    socket.on('user-connected', (user) => {
-      connectToNewUser(user, stream)
-    })
+    videoAllowed = true
+    myStream = stream
+    connectVideoStream(myVideo, myStream)
+  })
+  .catch((error) => {
+    videoAllowed = false
+    console.log(error)
   })
 
-// get list of users
+// ----
+// Listeners: peerjs
+// ----
+
+peer.on('open', (id) => {
+  myId = id
+  socket.emit('join', ROOM_ID, myId, username)
+})
+
+peer.on('call', (call) => {
+  if (videoAllowed) {
+    call.answer(myStream)
+  } else {
+    call.answer()
+  }
+
+  // get user video stream
+  call.on('stream', (otherStream) => {
+    connectVideoStream(otherVideo, otherStream)
+  })
+})
+
+peer.on('error', (error) => {
+  console.log(error)
+})
+
+// ----
+// Listeners: socket.io
+// ----
+
+socket.on('user-connected', (newUser) => {
+  otherUsername = newUser.username
+  connectToNewUser(newUser)
+  startInfo()
+  newScramble()
+})
+
 socket.on('get-users', (usersList) => {
   console.log('Get current users in this room')
   console.log(usersList)
-  users = usersList
-  let otherUsers = users.filter((user) => user.userId !== myId)
+  let otherUsers = usersList.filter((user) => user.userId !== myId)
   if (otherUsers.length > 0) {
     let otherUser = otherUsers[0]
 
-    battleState = 1
-    setUsernameText(otherUser.username, 1)
-    myTimer.style.display = 'block'
-    timerButton.style.display = 'block'
-    setTimerText('00.00', 0)
-    setTimerText('00.00', 1)
+    otherUsername = otherUser.username
+    startInfo()
   }
 })
 
@@ -65,54 +105,46 @@ socket.on('user-disconnected', (userId) => {
     calls[userId].close()
 
     battleState = 0
-    myTimer.style.display = 'none'
-    timerButton.style.display = 'none'
-    setUsernameText('', 1)
-    setTimerText('00.00', 0)
-    setTimerText('00.00', 1)
+    resetInfo()
   }
 })
 
-// on connection to peerserver
-peer.on('open', (id) => {
-  myId = id
-  socket.emit('join', ROOM_ID, myId, username)
-})
-
-socket.on('update-scramble', (scramble) => {
-  console.log(`Update scramble: ${scramble}`)
-  document.getElementById('scramble').textContent = scramble
+socket.on('update-scramble', (scrambleText) => {
+  console.log(`Update scramble: ${scrambleText}`)
+  heading.textContent = scrambleText
 })
 
 socket.on('update-timer', (timerText) => {
   console.log(`Update timer text: ${timerText}`)
+  otherTimer.classList.add('active')
   document.getElementsByClassName('timer')[1].textContent = timerText
+})
+
+socket.on('user-ready', (user) => {
+  otherTimer.classList.remove('active')
+  otherTimer.classList.add('ready')
 })
 
 socket.on('new-round', () => {
   battleState = 1
-
-  timerButton.textContent = 'start'
-  myTimer.classList.remove('finished')
-  setTimerText('00.00', 0)
-  setTimerText('00.00', 1)
+  roundInfo()
 })
 
-function connectToNewUser(newUser, stream) {
-  const call = peer.call(newUser.userId, stream)
+// ----
+// Functions: connection
+// ----
+
+function connectToNewUser(newUser) {
+  let call
+  if (videoAllowed) {
+    call = peer.call(newUser.userId, myStream)
+  }
 
   // get user video stream
-  call.on('stream', (userStream) => {
-    connectVideoStream(otherVideo, userStream)
-
-    battleState = 1
-    newScramble()
-    myTimer.style.display = 'block'
-    timerButton.style.display = 'block'
-    setUsernameText(newUser.username, 1)
-    setTimerText('00.00', 0)
-    setTimerText('00.00', 1)
+  call.on('stream', (otherStream) => {
+    connectVideoStream(otherVideo, otherStream)
   })
+
   // remove user video stream after disconnection
   call.on('close', () => {
     otherVideo.style.visibility = 'hidden'
@@ -129,6 +161,38 @@ function connectVideoStream(video, stream) {
   })
 }
 
+// ----
+// Functions: update text
+// ----
+
+function startInfo() {
+  battleState = 1
+  myTimer.style.display = 'block'
+  timerButton.style.display = 'block'
+  setUsernameText(otherUsername, 1)
+  setTimerText('00.00', 0)
+  setTimerText('00.00', 1)
+}
+
+function roundInfo() {
+  timerButton.textContent = 'start'
+  myTimer.classList.remove('ready')
+  otherTimer.classList.remove('active')
+  otherTimer.classList.remove('ready')
+  setTimerText('00.00', 0)
+  setTimerText('00.00', 1)
+}
+
+function resetInfo() {
+  otherVideo.style.visibility = 'hidden'
+  heading.textContent = 'Waiting for opponent to join...'
+  myTimer.style.display = 'none'
+  timerButton.style.display = 'none'
+  setUsernameText('', 1)
+  setTimerText('', 0)
+  setTimerText('', 1)
+}
+
 function setUsernameText(username, userNo) {
   document.getElementsByClassName('username')[userNo].textContent = username
 }
@@ -137,26 +201,35 @@ function setTimerText(time, userNo) {
   document.getElementsByClassName('timer')[userNo].textContent = time
 }
 
-function solveStarted() {
-  socket.emit('solve-started')
-}
-
-function solveFinished() {
-  const solveTime = myTimer.textContent
-  socket.emit('solve-finished', solveTime)
-}
-
-function userReady() {
-  socket.emit('user-ready')
-}
+// ----
+// Functions: socket emit
+// ----
 
 function newScramble() {
   socket.emit('new-scramble')
 }
 
-// ---------
-// Timer
-// ---------
+function solveStarted() {
+  myTimer.classList.add('active')
+  timerButton.textContent = 'stop'
+  socket.emit('solve-started')
+}
+
+function solveFinished() {
+  timerButton.textContent = 'ready'
+  const solveTime = myTimer.textContent
+  socket.emit('solve-finished', solveTime)
+}
+
+function userReady() {
+  myTimer.classList.remove('active')
+  myTimer.classList.add('ready')
+  socket.emit('user-ready')
+}
+
+// ----
+// Timer logic
+// ----
 
 let timerInterval = null
 let timerState = 0
@@ -222,8 +295,6 @@ function timer() {
   switch (timerState) {
     case 0:
       timerState = 1
-      myTimer.classList.add('active')
-      timerButton.textContent = 'stop'
 
       solveStarted()
 
@@ -231,9 +302,6 @@ function timer() {
       break
     case 1:
       timerState = 2
-      myTimer.classList.remove('active')
-      myTimer.classList.add('finished')
-      timerButton.textContent = 'ready'
 
       solveFinished()
 
@@ -246,6 +314,7 @@ function timer() {
     case 2:
       timerState = 0
       battleState = 0
+
       userReady()
 
       break

@@ -7,8 +7,7 @@ const Scrambo = require('scrambo')
 const PORT = process.env.PORT || 3000
 
 app.set('view engine', 'ejs')
-app.use('/static', express.static('./public'))
-app.use('/fonts', express.static('./public/fonts'))
+app.use('/', express.static('./public'))
 
 app.get('/', (req, res) => {
   res.render('home')
@@ -53,7 +52,7 @@ io.on('connection', (socket) => {
       let usersInRoom = users.filter((user) => user.roomId === roomId)
       users.find((user) => user.userId === userId).ready = true
 
-      // TODO: Check if both users are ready => reset timers, new scramble
+      // check if both users are ready => reset timers, new scramble
       let allReady = true
       usersInRoom.forEach((user) => {
         if (!user.ready) allReady = false
@@ -67,6 +66,8 @@ io.on('connection', (socket) => {
           user.ready = false
           user.solveTime = '00.00'
         })
+      } else {
+        socket.to(roomId).emit('user-ready', userId)
       }
     })
 
