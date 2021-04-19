@@ -19,7 +19,13 @@ let otherUsername = ''
 // ----
 
 let heading = document.getElementById('heading')
+const waitingText = 'Waiting for opponent to join... 🕒'
+const roundText = 'Compete for the fastest solve!'
+heading.textContent = waitingText
+let scramble = document.getElementById('scramble')
 
+const [myBox, otherBox] = document.getElementsByClassName('box')
+otherBox.style.display = 'none'
 const [myTimer, otherTimer] = document.getElementsByClassName('timer')
 const timerButton = document.getElementById('timerButton')
 myTimer.style.display = 'none'
@@ -65,15 +71,16 @@ peer.on('open', (id) => {
 peer.on('call', (call) => {
   if (videoAllowed) {
     call.answer(myStream)
-  } else {
-    call.answer()
-    showPlaceholder(true, 0)
-  }
 
-  // get user video stream
-  call.on('stream', (otherStream) => {
-    connectVideoStream(otherVideo, otherStream)
-  })
+    // get user video stream
+    call.on('stream', (otherStream) => {
+      connectVideoStream(otherVideo, otherStream)
+    })
+  } else {
+    call.close()
+    showPlaceholder(true, 0)
+    showPlaceholder(true, 1)
+  }
 })
 
 peer.on('error', (error) => {
@@ -87,6 +94,8 @@ peer.on('error', (error) => {
 socket.on('user-connected', (newUser) => {
   otherUsername = newUser.username
   connectToNewUser(newUser)
+
+  battleState = 1
   startInfo()
   newScramble()
 })
@@ -99,6 +108,8 @@ socket.on('get-users', (usersList) => {
     let otherUser = otherUsers[0]
 
     otherUsername = otherUser.username
+
+    battleState = 1
     startInfo()
 
     showPlaceholder(!videoAllowed, 1)
@@ -114,13 +125,13 @@ socket.on('user-disconnected', (userId) => {
 
 socket.on('update-scramble', (scrambleText) => {
   console.log(`Update scramble: ${scrambleText}`)
-  heading.textContent = scrambleText
+  setScrambleText(scrambleText)
 })
 
 socket.on('update-timer', (timerText) => {
   console.log(`Update timer text: ${timerText}`)
   otherTimer.classList.add('active')
-  document.getElementsByClassName('timer')[1].textContent = timerText
+  setTimerText(timerText, 1)
 })
 
 socket.on('user-ready', (user) => {
@@ -146,9 +157,9 @@ function connectToNewUser(newUser) {
       connectVideoStream(otherVideo, otherStream)
     })
 
-    // remove user video stream after disconnection
+    // call declined
     call.on('close', () => {
-      otherVideo.style.display = 'none'
+      showPlaceholder(true, 1)
     })
 
     calls[newUser.userId] = call
@@ -176,16 +187,18 @@ function showPlaceholder(show, userNo) {
 // ----
 
 function startInfo() {
-  battleState = 1
+  scramble.style.display = 'block'
+  otherBox.style.display = 'flex'
   myTimer.style.display = 'block'
   otherTimer.style.display = 'block'
   timerButton.style.display = 'block'
   setUsernameText(otherUsername, 1)
-  setTimerText('00.00', 0)
-  setTimerText('00.00', 1)
+
+  roundInfo()
 }
 
 function roundInfo() {
+  setHeadingText(roundText)
   timerButton.textContent = 'start'
   myTimer.classList.remove('ready')
   otherTimer.classList.remove('active')
@@ -195,13 +208,23 @@ function roundInfo() {
 }
 
 function resetInfo() {
+  otherBox.style.display = 'none'
   otherVideo.style.display = 'none'
   otherPlaceholder.style.display = 'none'
-  heading.textContent = 'Waiting for opponent to join...'
+  heading.textContent = waitingText
+  scramble.style.display = 'none'
   myTimer.style.display = 'none'
   otherTimer.style.display = 'none'
   timerButton.style.display = 'none'
   setUsernameText('', 1)
+}
+
+function setHeadingText(headingText) {
+  heading.textContent = headingText
+}
+
+function setScrambleText(scrambleText) {
+  scramble.textContent = scrambleText
 }
 
 function setUsernameText(username, userNo) {
